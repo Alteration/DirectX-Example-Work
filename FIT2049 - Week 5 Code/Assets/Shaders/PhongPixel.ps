@@ -1,0 +1,39 @@
+Texture2D meshTexture;
+SamplerState samplerType;
+
+cbuffer LightingBuffer
+{
+	float3 lightDir;
+	float lightIntensity;
+	float4 ambientLight;
+	float shine;
+	float3 padding;
+};
+
+struct PixelInput
+{
+	float4 position : SV_POSITION;
+	float4 colour : COLOR;
+	float3 normal : NORMAL;
+	float2 uv : TEXCOORD;
+	float3 viewDirection: TEXCOORD1;
+};
+
+float4 main(PixelInput input) : SV_TARGET
+{
+	float diffuse = saturate(dot(input.normal, lightDir));
+	float4 textureColour = meshTexture.Sample(samplerType, input.uv);
+
+	float3 reflectionVector = normalize(2 * diffuse * input.normal - lightDir);
+
+	float4 spec = pow(saturate(dot(reflectionVector, input.viewDirection)), shine);
+	
+	float4 colour = (input.colour * textureColour * lightIntensity) + ambientLight;
+	colour *= diffuse;
+	colour += spec;
+
+	return saturate(colour);
+
+	//return float4(saturate((ambientLight + textureColour.xyz) * diffuse + spec), textureColour.w);
+	//return saturate(ambientLight + (input.colour * textureColour * lightIntensity) * diffuse + spec);
+}

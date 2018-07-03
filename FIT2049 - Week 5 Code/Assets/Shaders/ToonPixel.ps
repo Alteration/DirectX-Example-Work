@@ -1,0 +1,47 @@
+Texture2D meshTexture : register(t0);
+SamplerState samplerType;
+
+Texture2D rampTexture : register(t1);
+SamplerState rampSamplerType;
+
+cbuffer LightingBuffer
+{
+	float3 lightDir;
+	float lightIntensity;
+	float4 ambientLight;
+	float shine;
+	float3 padding;
+};
+
+struct PixelInput
+{
+	float4 position : SV_POSITION;
+	float4 colour : COLOR;
+	float3 normal : NORMAL;
+	float2 uv : TEXCOORD;
+	float3 viewDirection: TEXCOORD1;
+};
+
+float4 main(PixelInput input) : SV_TARGET
+{
+	float lineThickness = 0.3f;
+	float lineHardness = 100.0f;
+
+	float4 textureColour = meshTexture.Sample(samplerType, input.uv);
+	float diffuse = saturate(dot(input.normal, lightDir));
+	
+	float2 rampUV = {diffuse, 0.3};
+	float4 lightColour = rampTexture.Sample(rampSamplerType, rampUV);
+
+	float fresnal = dot(input.normal, input.viewDirection);
+	fresnal = clamp((fresnal - lineThickness) * lineHardness, 0.0, 1.0);
+	lightColour *= fresnal;
+
+	float3 reflect = normalize(2 * diffuse * input.normal - lightDir);
+
+	float specular = pow(saturate(dot(reflect, input.viewDirection)), shine);
+	specular = clamp((specular - 0.5) * 1000.0, 0.0, 1.0);
+	
+	return saturate(ambientLight + (lightColour * textureColour * lightIntensity));
+	//return saturate(ambientLight + (lightColour * textureColour * lightIntensity) + specular);
+}

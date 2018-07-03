@@ -1,0 +1,17 @@
+struct PixelInput
+{
+	float4 position : SV_POSITION;
+	float4 colour : COLOR;
+	float3 normal : NORMAL;
+	float2 uv : TEXCOORD;
+};
+
+float4 main(PixelInput input) : SV_TARGET
+{
+	//A hard coded directional light. We will be setting this via code in the next few weeks
+	float3 lightDirection = {0.0f, 0.894427f, -0.447214f};
+
+	float lightIntensity = saturate(dot(input.normal, lightDirection));
+
+	return saturate(input.colour * lightIntensity);
+}
